@@ -1,7 +1,9 @@
 package com.example.hp.studentregister;
 
 import android.arch.persistence.room.Room;
+import android.content.Context;
 import android.content.Intent;
+import android.databinding.DataBindingUtil;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -17,6 +19,8 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.example.hp.studentregister.databinding.ActivityMainBinding;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -25,8 +29,10 @@ public class MainActivity extends AppCompatActivity {
     private StudentAppDatabase studentAppDatabase;
     private ArrayList<Student> students;
     private StudentDataAdapter studentDataAdapter;
-    public static final int NEW_STUDENT_ACTIVITY_REQUEST_CODE=1;
+    public static final int NEW_STUDENT_ACTIVITY_REQUEST_CODE = 1;
 
+    private ActivityMainBinding activityMainBinding;
+    private MainActivityClickHandlers handlers;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,19 +41,24 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        RecyclerView recyclerView=findViewById(R.id.rvStudents);
+        activityMainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main);
+
+        handlers=new MainActivityClickHandlers(this);
+        activityMainBinding.setClickHandler(handlers);
+
+        RecyclerView recyclerView = findViewById(R.id.rvStudents);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setHasFixedSize(true);
 
-        studentDataAdapter=new StudentDataAdapter();
+        studentDataAdapter = new StudentDataAdapter();
         recyclerView.setAdapter(studentDataAdapter);
 
-        studentAppDatabase= Room.databaseBuilder(getApplicationContext(), StudentAppDatabase.class,"StudentDB")
-                            .build();
+        studentAppDatabase = Room.databaseBuilder(getApplicationContext(), StudentAppDatabase.class, "StudentDB")
+                .build();
 
         loadData();
 
-        new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0,ItemTouchHelper.LEFT) {
+        new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder viewHolder1) {
                 return false;
@@ -56,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
 
-                Student studentToDelete=students.get(viewHolder.getAdapterPosition());
+                Student studentToDelete = students.get(viewHolder.getAdapterPosition());
                 deleteStudent(studentToDelete);
 
 
@@ -64,32 +75,45 @@ public class MainActivity extends AppCompatActivity {
         }).attachToRecyclerView(recyclerView);
 
 
+//        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+//        fab.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//               Intent intent=new Intent(MainActivity.this,AddNewStudentActivity.class);
+//               startActivityForResult(intent,NEW_STUDENT_ACTIVITY_REQUEST_CODE);
+//            }
+//        });
+    }
 
+    public class MainActivityClickHandlers {
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-               Intent intent=new Intent(MainActivity.this,AddNewStudentActivity.class);
-               startActivityForResult(intent,NEW_STUDENT_ACTIVITY_REQUEST_CODE);
-            }
-        });
+        Context context;
+
+        public MainActivityClickHandlers(Context context) {
+            this.context = context;
+        }
+
+        public void onFABClicked(View view) {
+            Intent intent = new Intent(MainActivity.this, AddNewStudentActivity.class);
+            startActivityForResult(intent, NEW_STUDENT_ACTIVITY_REQUEST_CODE);
+
+        }
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if(requestCode==NEW_STUDENT_ACTIVITY_REQUEST_CODE && resultCode==RESULT_OK){
+        if (requestCode == NEW_STUDENT_ACTIVITY_REQUEST_CODE && resultCode == RESULT_OK) {
 
-             String name=data.getStringExtra("NAME");
-             String email=data.getStringExtra("EMAIL");
-             String country=data.getStringExtra("COUNTRY");
+            String name = data.getStringExtra("NAME");
+            String email = data.getStringExtra("EMAIL");
+            String country = data.getStringExtra("COUNTRY");
 
-            SimpleDateFormat simpleDateFormat=new SimpleDateFormat("EEE, d MMM yyyy");
-            String currentDate=simpleDateFormat.format(new Date());
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("EEE, d MMM yyyy");
+            String currentDate = simpleDateFormat.format(new Date());
 
-            Student student=new Student();
+            Student student = new Student();
             student.setName(name);
             student.setEmail(email);
             student.setCountry(country);
@@ -101,22 +125,21 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-
     }
 
-    void loadData(){
+    void loadData() {
 
         new GetAllStudentsAsyncTask().execute();
 
     }
 
-    private class GetAllStudentsAsyncTask extends AsyncTask<Void,Void,Void>{
+    private class GetAllStudentsAsyncTask extends AsyncTask<Void, Void, Void> {
 
 
         @Override
         protected Void doInBackground(Void... voids) {
 
-            students=(ArrayList<Student>) studentAppDatabase.getStudentDao().getAllStudents();
+            students = (ArrayList<Student>) studentAppDatabase.getStudentDao().getAllStudents();
             return null;
         }
 
@@ -128,15 +151,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
-    private void deleteStudent(Student student){
+    private void deleteStudent(Student student) {
 
         new DeleteStudentAsyncTask().execute(student);
 
     }
 
-    private class DeleteStudentAsyncTask extends AsyncTask<Student,Void,Void>{
-
+    private class DeleteStudentAsyncTask extends AsyncTask<Student, Void, Void> {
 
 
         @Override
@@ -154,14 +175,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void addNewStudent(Student student){
+    private void addNewStudent(Student student) {
 
         new AddNewStudentAsyncTask().execute(student);
 
     }
 
-    private class AddNewStudentAsyncTask extends AsyncTask<Student,Void,Void>{
-
+    private class AddNewStudentAsyncTask extends AsyncTask<Student, Void, Void> {
 
 
         @Override
